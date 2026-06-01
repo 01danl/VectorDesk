@@ -4,22 +4,36 @@ from app.services.llm import generate_answer
 from app.services.embeddings import create_embedding
 from app.database import engine
 from app.models.chunk import Chunk
-from app.database import Base
+from app.database import engine, Base
+from app.database import SessionLocal 
 from app.services.chunking import split_text
 from app.services.embeddings import create_embedding
 from app.services.rag import save_chunk
 from app.services.rag import search_similar_chunks
 from app.services.llm import generate_rag_answer
+from app.models.bots import Bot
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title='VectorDesk API')
 
+class CreateBotRequest(BaseModel):
+    id : str
+    name : str
+    description : str | None = None,
+    system_promt : str | None = None
+
 class ChatRequest(BaseModel):
     message : str
 
 class IngestRequest(BaseModel):
+    bot_id: str
     text: str
+
+class RagChatRequest(BaseModel):
+    bot_id: str
+    message: str
+
 
 @app.get("/")
 def root():
@@ -50,6 +64,7 @@ def ingest(request: IngestRequest):
         embedding = create_embedding(chunk)
 
         saved = save_chunk(
+            bot_id=request.bot_id,
             content=chunk,
             embedding=embedding
         )
@@ -58,47 +73,63 @@ def ingest(request: IngestRequest):
 
     return {
         "message": "Text ingested successfully",
+        "bot_id": request.bot_id,
         "chunks_saved": len(saved_chunks),
         "chunk_ids": saved_chunks
     }
 
-@app.post("/search")
-def search(request: ChatRequest):
-    query_embedding = create_embedding(request.message)
-
-    results = search_similar_chunks(query_embedding)
-
-    return {
-        "query": request.message,
-        "results": [
-            {
-                "id": row.id,
-                "content": row.content,
-                "distance": row.distance
-            }
-            for row in results
-        ]
-    }
-
 @app.post("/rag-chat")
-def rag_chat(request: ChatRequest):
+def rag_chat(request: RagChatRequest):
     query_embedding = create_embedding(request.message)
 
-    results = search_similar_chunks(query_embedding=query_embedding, limit=3)
+    results = search_similar_chunks(
+        bot_id=request.bot_id,
+        query_embedding=query_embedding,
+        limit=3
+    )
 
     context = "\n\n".join([row.content for row in results])
 
-    answer = generate_rag_answer(question=request.message, context=context)
+    answer = generate_rag_answer(
+        question=request.message,
+        context=context
+    )
 
     return {
+        "bot_id": request.bot_id,
         "question": request.message,
         "answer": answer,
         "sources": [
             {
                 "id": row.id,
+                "bot_id": row.bot_id,
                 "content": row.content,
                 "distance": row.distance
             }
             for row in results
         ]
+    }
+
+@app.post("/bots")
+def create_bot(request : CreateBotRequest):
+    db = SessionLocal()
+
+    bot = Bot(
+        id = request.id,
+        name = request.name,
+        description = request.description,
+        system_promt = request.system_promt
+    )
+
+    db.add(bot)
+    db.commit()
+    db.refresh(bot)
+    db.close()
+
+    return {
+        "bot" : bot.id,
+        "name" : bot.name,
+        "description" : bot.description,
+        "system_promt" : bot.system_promt,
+        "created_at" : bot.created_at
     }
