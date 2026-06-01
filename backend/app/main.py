@@ -8,6 +8,8 @@ from app.database import Base
 from app.services.chunking import split_text
 from app.services.embeddings import create_embedding
 from app.services.rag import save_chunk
+from app.services.rag import search_similar_chunks
+from app.services.llm import generate_rag_answer
 
 Base.metadata.create_all(bind=engine)
 
@@ -58,4 +60,45 @@ def ingest(request: IngestRequest):
         "message": "Text ingested successfully",
         "chunks_saved": len(saved_chunks),
         "chunk_ids": saved_chunks
+    }
+
+@app.post("/search")
+def search(request: ChatRequest):
+    query_embedding = create_embedding(request.message)
+
+    results = search_similar_chunks(query_embedding)
+
+    return {
+        "query": request.message,
+        "results": [
+            {
+                "id": row.id,
+                "content": row.content,
+                "distance": row.distance
+            }
+            for row in results
+        ]
+    }
+
+@app.post("/rag-chat")
+def rag_chat(request: ChatRequest):
+    query_embedding = create_embedding(request.message)
+
+    results = search_similar_chunks(query_embedding=query_embedding, limit=3)
+
+    context = "\n\n".join([row.content for row in results])
+
+    answer = generate_rag_answer(question=request.message, context=context)
+
+    return {
+        "question": request.message,
+        "answer": answer,
+        "sources": [
+            {
+                "id": row.id,
+                "content": row.content,
+                "distance": row.distance
+            }
+            for row in results
+        ]
     }

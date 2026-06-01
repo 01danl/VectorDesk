@@ -18,3 +18,33 @@ def generate_answer(message: str) -> str:
         ],
     )
     return response.choices[0].message.content
+
+def generate_rag_answer(question: str, context: str) -> str:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": """
+You are a helpful AI assistant for business customer support.
+
+Answer ONLY using the provided context.
+If the answer is not in the context, say:
+"I don't know based on the provided knowledge base."
+"""
+            },
+            {
+                "role": "user",
+                "content": f"""
+Context:
+{context}
+
+Question:
+{question}
+"""
+            }
+        ],
+        temperature=0.2
+    )
+
+    return response.choices[0].message.content
