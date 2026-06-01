@@ -1,17 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-from app.services.llm import generate_answer
 from app.services.embeddings import create_embedding
-from app.database import engine
 from app.models.chunk import Chunk
-from app.database import engine, Base
-from app.database import SessionLocal 
+from app.database import engine, Base,SessionLocal 
 from app.services.chunking import split_text
 from app.services.embeddings import create_embedding
-from app.services.rag import save_chunk
-from app.services.rag import search_similar_chunks
-from app.services.llm import generate_rag_answer
+from app.services.rag import save_chunk, search_similar_chunks
+from app.services.llm import generate_rag_answer, generate_answer
 from app.models.bots import Bot
+from app.services.file_loader import extract_text_from_file
 
 Base.metadata.create_all(bind=engine)
 
@@ -127,9 +124,82 @@ def create_bot(request : CreateBotRequest):
     db.close()
 
     return {
-        "bot" : bot.id,
+        "id" : bot.id,
         "name" : bot.name,
         "description" : bot.description,
         "system_promt" : bot.system_promt,
         "created_at" : bot.created_at
     }
+
+@app.get("/bots")
+def get_bots():
+    db = SessionLocal()
+
+    bots = db.query(Bot).all()
+
+    db.close()
+
+    return [{
+        "id" : bot.id,
+        "name" : bot.name,
+        "description" : bot.description,
+        "created_at" : bot.created_at
+    }
+    for bot in bots:
+    ]
+
+@app.get("/bots/{bot_id}")
+def get_bots(bot_id : str):
+    db = SessionLocal()
+
+    bots = db.query(Bot).filter(Bot.id == bot_id).first()
+
+    db.close()
+
+    return [{
+        "id" : bot.id,
+        "name" : bot.name,
+        "description" : bot.description,
+        "created_at" : bot.created_at
+    }
+    for bot in bots:
+    ]
+
+@app.post("/upload-file")
+async def upload_file(bot_id: str = Form(...), file: UploadFile = File(...)):
+    try:
+        file_bytes = await file.read()
+
+        text = extract_text_from_file(
+            filename=file.filename,
+            file_bytes=file_bytes
+        )
+
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="File has no readable text")
+
+        chunks = split_text(text)
+
+        saved_chunks = []
+
+        for chunk in chunks:
+            embedding = create_embedding(chunk)
+
+            saved = save_chunk(
+                bot_id=bot_id,
+                content=chunk,
+                embedding=embedding
+            )
+
+            saved_chunks.append(saved.id)
+
+        return {
+            "message": "File uploaded and indexed successfully",
+            "bot_id": bot_id,
+            "filename": file.filename,
+            "chunks_saved": len(saved_chunks),
+            "chunk_ids": saved_chunks
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
