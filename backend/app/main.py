@@ -10,8 +10,9 @@ from app.services.llm import generate_rag_answer, generate_answer
 from app.models.bots import Bot
 from app.services.file_loader import extract_text_from_file
 from fastapi.middleware.cors import CORSMiddleware
+from app.models.message import Message
 
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title='VectorDesk API')
 
@@ -49,6 +50,7 @@ class RagChatRequest(BaseModel):
 def root():
     return {"status" : "Vectordesk backend is running"}
 
+#наш чат request
 @app.post("/chat")
 def chat(request : ChatRequest):
     answer = generate_answer(request.message)
@@ -88,22 +90,27 @@ def ingest(request: IngestRequest):
         "chunk_ids": saved_chunks
     }
 
+#наш rag chat
 @app.post("/rag-chat")
 def rag_chat(request: RagChatRequest):
-    query_embedding = create_embedding(request.message)
-
-    results = search_similar_chunks(
-        bot_id=request.bot_id,
-        query_embedding=query_embedding,
-        limit=3
+    save_message(
+        bot_id = request.bot_id,
+        role='user',
+        content=request.message
     )
+    query_embedding = create_embedding(request.message) # использует функцию create_embedding из embeddings, чтобы пользователя ответ embedding
+
+    results = search_similar_chunks(bot_id=request.bot_id, query_embedding=query_embedding, limit=3)
+    """Ищет chunks в таблице"""
 
     context = "\n\n".join([row.content for row in results])
 
-    answer = generate_rag_answer(
-        question=request.message,
-        context=context
-    )
+    answer = generate_rag_answer(question=request.message, context=context)  # функцию из llm берет
+    save_message(
+        bot_id=request.bot_id,
+        role="assistant",
+        content=answer
+        )
 
     return {
         "bot_id": request.bot_id,
@@ -220,3 +227,44 @@ async def upload_file(bot_id: str = Form(...), file: UploadFile = File(...)):
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+# сохраняет историю чата
+def save_message(bot_id : str, role : str, content : str):
+    db = SessionLocal()
+
+    message = Message(
+        bot_id = bot_id,
+        role=role,
+        content=content
+    )
+
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    db.close()
+
+    return message
+
+@app.get("/bots/{bot_id}/messages")
+def get_bot_messages(bot_id: str):
+    db = SessionLocal()
+
+    messages = (
+        db.query(Message)
+        .filter(Message.bot_id == bot_id)
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+
+    db.close()
+
+    return [
+        {
+            "id": message.id,
+            "bot_id": message.bot_id,
+            "role": message.role,
+            "content": message.content,
+            "created_at": message.created_at
+        }
+        for message in messages
+    ]
