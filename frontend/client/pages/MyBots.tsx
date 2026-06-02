@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { getBots } from "../lib/api";
+import { Link } from "react-router-dom";
 
 type Bot = {
   id: string;
@@ -41,6 +42,14 @@ export default function MyBots() {
               <p className="mt-4 font-poppins text-xs text-[#9CA3AF]">
                 ID: {bot.id}
               </p>
+
+              {/* 👇 КНОПКА ДОБАВЛЕНА ЗДЕСЬ */}
+              <Link
+                to={`/bots/${bot.id}`}
+                className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-[8px] bg-[#1E2875] px-5 font-poppins text-sm font-semibold text-white transition-colors hover:bg-[#161f5e]"
+              >
+                Open Bot
+              </Link>
             </div>
           ))}
         </div>

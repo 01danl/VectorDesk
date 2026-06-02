@@ -15,6 +15,7 @@ import Placeholder from "./pages/Placeholder";
 import CreateBot from "./pages/CreateBot";
 import ChatHistory from "./pages/ChatHistory";
 import MyBots from "./pages/MyBots";
+import BotDetail from "./pages/BotDetail";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             element={<Placeholder title="Usage Stats" />}
           />
           <Route path="/chat-history" element={<ChatHistory />} />
+          <Route path="/bots/:bot_id" element={<BotDetail />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

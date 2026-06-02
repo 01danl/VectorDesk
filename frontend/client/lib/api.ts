@@ -49,3 +49,8 @@ export async function ragChat(data: {
 
   return response.json();
 }
+
+export async function getBot(botId: string) {
+  const response = await fetch(`${API_URL}/bots/${botId}`);
+  return response.json();
+}
