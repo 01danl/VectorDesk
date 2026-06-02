@@ -1,3 +1,8 @@
+"""
+v1.2 Version by Daniyal Bissenov
+"""
+
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 from app.services.embeddings import create_embedding
