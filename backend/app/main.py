@@ -9,10 +9,19 @@ from app.services.rag import save_chunk, search_similar_chunks
 from app.services.llm import generate_rag_answer, generate_answer
 from app.models.bots import Bot
 from app.services.file_loader import extract_text_from_file
+from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title='VectorDesk API')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class CreateBotRequest(BaseModel):
     id : str
