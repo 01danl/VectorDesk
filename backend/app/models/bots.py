@@ -9,5 +9,5 @@ class Bot(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    system_promt = Column(String, nullable=True)
+    system_prompt = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

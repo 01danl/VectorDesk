@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Placeholder from "./pages/Placeholder";
 import CreateBot from "./pages/CreateBot";
 import ChatHistory from "./pages/ChatHistory";
+import MyBots from "./pages/MyBots";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,7 @@ const App = () => (
           />
 
           <Route path="/dashboard" element={<Index />} />
-          <Route path="/my-bots" element={<Placeholder title="My Bots" />} />
+          <Route path="/my-bots" element={<MyBots />} />
           <Route path="/create-bot" element={<CreateBot />} />
           <Route path="/settings" element={<Placeholder title="Settings" />} />
           <Route

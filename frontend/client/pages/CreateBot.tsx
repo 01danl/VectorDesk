@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
+import { createBot, uploadFile } from "../lib/api";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateBot() {
   const [botName, setBotName] = useState("");
@@ -7,6 +9,26 @@ export default function CreateBot() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [files, setFiles] = useState<File[]>([]);
 
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  //
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const botId = botName.toLowerCase().replace(/ /g, "_");
+    await createBot({
+        id: botId,
+        name: botName,
+        description,
+        system_prompt: systemPrompt,
+    });
+    for (const file of files) {
+        await uploadFile(botId, file);
+    }
+    setLoading(false);
+    navigate("/my-bots");
+};
+  
   return (
     <Layout>
       <div className="flex justify-center">
@@ -15,7 +37,7 @@ export default function CreateBot() {
             Create your chat-bot
           </h1>
 
-          <form className="flex flex-col gap-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <div>
               <label className="mb-2 block font-poppins text-sm font-semibold text-[#111827]">
                 Bot Name <span className="text-red-500">*</span>
@@ -109,7 +131,7 @@ export default function CreateBot() {
               type="submit"
               className="mt-2 h-[56px] rounded-[8px] bg-[#1E2875] font-poppins text-[24px] font-semibold text-white transition hover:bg-[#17205f]"
             >
-              Create
+                {loading ? "Creating..." : "Create"}
             </button>
           </form>
         </div>

@@ -15,10 +15,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title='VectorDesk API')
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="VectorDesk API")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -26,8 +30,8 @@ app.add_middleware(
 class CreateBotRequest(BaseModel):
     id : str
     name : str
-    description : str | None = None,
-    system_promt : str | None = None
+    description : str | None = None
+    system_prompt : str | None = None
 
 class ChatRequest(BaseModel):
     message : str
@@ -124,7 +128,7 @@ def create_bot(request : CreateBotRequest):
         id = request.id,
         name = request.name,
         description = request.description,
-        system_promt = request.system_promt
+        system_prompt = request.system_prompt
     )
 
     db.add(bot)
@@ -136,7 +140,7 @@ def create_bot(request : CreateBotRequest):
         "id" : bot.id,
         "name" : bot.name,
         "description" : bot.description,
-        "system_promt" : bot.system_promt,
+        "system_prompt" : bot.system_prompt,
         "created_at" : bot.created_at
     }
 
