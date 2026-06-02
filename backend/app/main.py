@@ -139,31 +139,35 @@ def get_bots():
 
     db.close()
 
-    return [{
-        "id" : bot.id,
-        "name" : bot.name,
-        "description" : bot.description,
-        "created_at" : bot.created_at
-    }
-    for bot in bots:
+    return [
+        {
+            "id": bot.id,
+            "name": bot.name,
+            "description": bot.description,
+            "system_prompt": bot.system_prompt,
+            "created_at": bot.created_at
+        }
+        for bot in bots
     ]
 
 @app.get("/bots/{bot_id}")
-def get_bots(bot_id : str):
+def get_bot(bot_id: str):
     db = SessionLocal()
 
-    bots = db.query(Bot).filter(Bot.id == bot_id).first()
+    bot = db.query(Bot).filter(Bot.id == bot_id).first()
 
     db.close()
 
-    return [{
-        "id" : bot.id,
-        "name" : bot.name,
-        "description" : bot.description,
-        "created_at" : bot.created_at
+    if not bot:
+        return {"error": "Bot not found"}
+
+    return {
+        "id": bot.id,
+        "name": bot.name,
+        "description": bot.description,
+        "system_prompt": bot.system_prompt,
+        "created_at": bot.created_at
     }
-    for bot in bots:
-    ]
 
 @app.post("/upload-file")
 async def upload_file(bot_id: str = Form(...), file: UploadFile = File(...)):
