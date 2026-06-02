@@ -127,7 +127,7 @@ function UserIcon() {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: <DashboardIcon /> },
+  { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
   { label: "MyBots", href: "/my-bots", icon: <MyBotsIcon /> },
   { label: "Create Bot", href: "/create-bot", icon: <CreateBotIcon />, hasIndicator: true },
   { label: "Settings", href: "/settings", icon: <SettingsIcon /> },

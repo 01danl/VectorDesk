@@ -12,6 +12,8 @@ import SignUp from "./pages/SignUp";
 import Index from "./pages/index";
 import NotFound from "./pages/NotFound";
 import Placeholder from "./pages/Placeholder";
+import CreateBot from "./pages/CreateBot";
+import ChatHistory from "./pages/ChatHistory";
 
 const queryClient = new QueryClient();
 
@@ -32,19 +34,13 @@ const App = () => (
 
           <Route path="/dashboard" element={<Index />} />
           <Route path="/my-bots" element={<Placeholder title="My Bots" />} />
-          <Route
-            path="/create-bot"
-            element={<Placeholder title="Create Bot" />}
-          />
+          <Route path="/create-bot" element={<CreateBot />} />
           <Route path="/settings" element={<Placeholder title="Settings" />} />
           <Route
             path="/usage-stats"
             element={<Placeholder title="Usage Stats" />}
           />
-          <Route
-            path="/chat-history"
-            element={<Placeholder title="Chat History" />}
-          />
+          <Route path="/chat-history" element={<ChatHistory />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
